@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
-from app_logic import get_dynamic_route_prediction 
+from app_logic import get_dynamic_route_prediction # Import core logic
 import os
 
 # --- SERVER CONFIGURATION ---
+# IMPORTANT: The Flask instance must be named 'app' for Gunicorn to find it easily.
 app = Flask(__name__)
-# Crucial for allowing the frontend to talk to the backend 
+# Enable CORS for cross-origin requests
 CORS(app) 
-PORT = 5001 # Set a default port (using 5001 as 5000 was blocked)
+PORT = 5001 # Retain 5001 for local testing, but Render ignores this port number.
 
 # --- API ENDPOINT ---
 @app.route('/predict_risk', methods=['POST'])
@@ -34,14 +35,12 @@ def predict_risk():
 @app.route('/')
 def serve_index():
     """Serves the main HTML dashboard file (index.html)."""
-    # Use send_file to serve the index.html from the current directory
     return send_file('index.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
     """
-    Safely serves static files (like delhi_locations.js or favicon.ico).
-    This uses send_from_directory, which fixes the FileNotFoundError you faced.
+    Safely serves static files (like delhi_locations.js).
     """
     try:
         # Serve the file from the current working directory (represented by '.')
@@ -55,6 +54,4 @@ if __name__ == '__main__':
     print("\n--- GNN Prediction Server Started ---")
     print("WARNING: First request will be slow (10-20s) due to graph loading.")
     print(f"Access the web app at: http://127.0.0.1:{PORT}/")
-    
-    # Note: If port 5001 is also blocked, try changing PORT = 5002, 5003, etc.
     app.run(host='0.0.0.0', port=PORT, debug=True, use_reloader=False)

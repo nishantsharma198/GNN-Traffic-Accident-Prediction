@@ -11,8 +11,7 @@ random.seed(42)
 
 def get_and_prepare_graph():
     """
-    Downloads the graph once (on the first call) and assigns a unique 
-    simulated 'predicted_accident_risk' score to every edge.
+    Downloads the graph once and assigns a simulated 'predicted_accident_risk' score.
     """
     global G_DELHI
     if G_DELHI is not None:
@@ -20,7 +19,6 @@ def get_and_prepare_graph():
 
     print(f"Server: Downloading and preparing graph for {PLACE_NAME} (5km radius)...")
     try:
-        # Download graph around a central point for fast processing
         center_lat, center_lon = 28.61, 77.21 
         G = ox.graph_from_point((center_lat, center_lon), dist=5000, network_type="drive", simplify=True)
     except Exception as e:
@@ -55,18 +53,15 @@ def get_dynamic_route_prediction(orig_lat, orig_lon, dest_lat, dest_lon):
         return {"status": "Graph Error", "total_predicted_accidents": 0.0, "node_count": 0, "route_geometry": []}
 
     try:
-        # 1. Find the nearest graph nodes
         orig_node = ox.nearest_nodes(G, orig_lon, orig_lat)
         dest_node = ox.nearest_nodes(G, dest_lon, dest_lat)
 
-        # 2. Find the SHORTEST PATH minimizing the 'predicted_accident_risk'
         route = nx.shortest_path(G, orig_node, dest_node, weight='predicted_accident_risk')
     except nx.NetworkXNoPath:
         return {"status": "No Path Found", "total_predicted_accidents": 0.0, "node_count": 0, "route_geometry": []}
     except Exception:
         return {"status": "Pathfinding Error", "total_predicted_accidents": 0.0, "node_count": 0, "route_geometry": []}
     
-    # 3. Calculate the cumulative predicted accident risk and extract geometry
     cumulative_risk = 0.0
     route_coords = []
     
@@ -74,17 +69,14 @@ def get_dynamic_route_prediction(orig_lat, orig_lon, dest_lat, dest_lon):
         edge_data = G.get_edge_data(u, v)
         min_risk = float('inf')
         
-        # Extract the node coordinates for the route geometry
         if G.nodes[u]: route_coords.append([G.nodes[u]['y'], G.nodes[u]['x']])
         
-        # Find the minimum risk edge (the one chosen by shortest_path)
         for k in edge_data:
             risk = edge_data[k].get('predicted_accident_risk', float('inf'))
             if risk < min_risk: min_risk = risk
         
         cumulative_risk += min_risk
     
-    # Add the final node's coordinates
     if route and G.nodes[route[-1]]: route_coords.append([G.nodes[route[-1]]['y'], G.nodes[route[-1]]['x']])
 
     return {
