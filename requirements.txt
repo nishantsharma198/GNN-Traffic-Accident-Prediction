@@ -1,0 +1,7 @@
+Flask
+Flask-CORS
+osmnx
+networkx
+numpy
+geopy
+gunicorn
