@@ -100,7 +100,7 @@
         // Global map and layer setup
         let map = null;
         let routeLayerGroup = null;
-        const FLASK_URL = 'http://127.0.0.1:5001/predict_risk'; // Targeting 5001 based on successful server run
+      const FLASK_URL = 'https://gnn-traffic-accident-prediction.onrender.com/predict_risk';
 
         function initializeMap(initialCoords) {
             if (map) { map.remove(); }
