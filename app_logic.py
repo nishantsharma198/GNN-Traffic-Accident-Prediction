@@ -17,17 +17,10 @@ def get_and_prepare_graph():
     if G_DELHI is not None:
         return G_DELHI
 
-    # --- FINAL RENDER FIX: Use smallest viable distance (2500m) ---
-    print(f"Server: Downloading and preparing graph for {PLACE_NAME} (2.5km radius, simplified)...")
+    print(f"Server: Downloading and preparing graph for {PLACE_NAME} (5km radius)...")
     try:
         center_lat, center_lon = 28.61, 77.21 
-        
-        # 1. CRITICALLY Reduced Radius (2500m): Minimizes data/memory needed.
-        # 2. Network Type ('drive_service'): Excludes complex residential/unclassified roads.
-        G = ox.graph_from_point((center_lat, center_lon), 
-                                dist=2500, 
-                                network_type="drive_service", 
-                                simplify=True)
+        G = ox.graph_from_point((center_lat, center_lon), dist=5000, network_type="drive", simplify=True)
     except Exception as e:
         print(f"Server Error: OSMnx failed to download graph: {e}")
         return None

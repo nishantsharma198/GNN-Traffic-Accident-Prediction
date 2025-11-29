@@ -97,130 +97,120 @@
     </div>
 
     <script>
-    // Global map and layer setup
-    let map = null;
-    let routeLayerGroup = null;
-    
-    // --- FINAL FIX: Ensure Clean URL String is Used ---
-    const FLASK_URL = 'https://gnn-traffic-accident-prediction.onrender.com/predict_risk'; 
-    // ----------------------------------------------------
+        // Global map and layer setup
+        let map = null;
+        let routeLayerGroup = null;
+      const FLASK_URL = 'http://127.0.0.1:5001/predict_risk';
 
-    function initializeMap(initialCoords) {
-        if (map) { map.remove(); }
-        
-        map = L.map('map', { 
-            center: initialCoords, 
-            zoom: 13,
-            zoomControl: true 
-        });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-        routeLayerGroup = new L.LayerGroup();
-        routeLayerGroup.addTo(map);
-    }
-
-    function populateLocations() {
-        // (Populates dropdowns from DELHI_LOCATIONS - Assumes delhi_locations.js is present)
-        const startSelect = document.getElementById('initial');
-        const destSelect = document.getElementById('destination');
-        
-        DELHI_LOCATIONS.forEach(location => {
-            const valueString = `${location.lat},${location.lon}`;
-            const startOption = document.createElement('option');
-            startOption.value = valueString;
-            startOption.textContent = location.name;
-            const destOption = startOption.cloneNode(true);
-            startSelect.appendChild(startOption);
-            destSelect.appendChild(destOption);
-        });
-        
-        startSelect.selectedIndex = 0; 
-        destSelect.selectedIndex = 8;
-    }
-
-    async function runPrediction() {
-        document.getElementById('output').style.display = 'none';
-        document.getElementById('loading_status').style.display = 'block';
-
-        const startElement = document.getElementById('initial');
-        const destElement = document.getElementById('destination');
-
-        const startCoords = startElement.value;
-        const destCoords = destElement.value;
-        const startName = startElement.options[startElement.selectedIndex].textContent;
-        const destName = destElement.options[destElement.selectedIndex].textContent;
-        
-        // Data payload for the Flask server
-        const payload = {
-            start_coords: startCoords,
-            end_coords: destCoords
-        };
-
-        // Update UI fields before the calculation starts
-        document.getElementById('start_name').textContent = startName;
-        document.getElementById('dest_name').textContent = destName;
-
-        try {
-            // --- API CALL TO FLASK SERVER ---
-            const apiEndpoint = FLASK_URL;
+        function initializeMap(initialCoords) {
+            if (map) { map.remove(); }
             
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            map = L.map('map', { 
+                center: initialCoords, 
+                zoom: 13,
+                zoomControl: true 
             });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
 
-            if (!response.ok) {
-                // If the connection succeeds but the server throws a 404/500, throw error
-                throw new Error(`API returned status ${response.status}`);
-            }
-
-            const result = await response.json();
-            
-            document.getElementById('loading_status').style.display = 'none';
-            document.getElementById('output').style.display = 'block';
-
-            // --- MAP UPDATES ---
-            routeLayerGroup.clearLayers(); 
-
-            if (result.status === "Success") {
-                const riskScore = result.total_predicted_accidents;
-                const routeGeometry = result.route_geometry;
-                
-                // Draw the calculated route
-                const polyline = L.polyline(routeGeometry, {
-                    color: '#ff6347', 
-                    weight: 6,
-                    opacity: 0.8
-                }).addTo(routeLayerGroup);
-
-                // Add markers
-                L.marker(routeGeometry[0]).addTo(routeLayerGroup).bindPopup(`<b>Start: ${startName}</b>`).openPopup();
-                L.marker(routeGeometry[routeGeometry.length - 1]).addTo(routeLayerGroup).bindPopup(`<b>End: ${destName}</b>`);
-
-                // Adjust map view to fit the entire route
-                map.fitBounds(polyline.getBounds()); 
-
-                // Update UI with final score
-                document.getElementById('risk_score').textContent = riskScore.toFixed(2);
-                document.getElementById('status_message').textContent = `Status: Success | Path calculated with ${result.node_count} nodes.`;
-            } else {
-                // Handle No Path Found or Error
-                document.getElementById('risk_score').textContent = `ERROR: ${result.status}`;
-                document.getElementById('status_message').textContent = 'Calculation failed. Try a closer route.';
-            }
-
-        } catch (error) {
-            document.getElementById('loading_status').style.display = 'none';
-            document.getElementById('output').style.display = 'block';
-            document.getElementById('risk_score').textContent = 'CONNECTION ERROR';
-            document.getElementById('status_message').textContent = `Check Dev Tools Console. Error: ${error.message}`;
-            console.error('Fetch Error:', error);
+            routeLayerGroup = new L.LayerGroup();
+            routeLayerGroup.addTo(map);
         }
-    }
-</script>
+
+        function populateLocations() {
+            // (Populates dropdowns from DELHI_LOCATIONS)
+            const startSelect = document.getElementById('initial');
+            const destSelect = document.getElementById('destination');
+            
+            DELHI_LOCATIONS.forEach(location => {
+                const valueString = `${location.lat},${location.lon}`;
+                const startOption = document.createElement('option');
+                startOption.value = valueString;
+                startOption.textContent = location.name;
+                const destOption = startOption.cloneNode(true);
+                startSelect.appendChild(startOption);
+                destSelect.appendChild(destOption);
+            });
+            
+            startSelect.selectedIndex = 0; 
+            destSelect.selectedIndex = 8;
+        }
+
+        async function runPrediction() {
+            document.getElementById('output').style.display = 'none';
+            document.getElementById('loading_status').style.display = 'block';
+
+            const startElement = document.getElementById('initial');
+            const destElement = document.getElementById('destination');
+
+            const startCoords = startElement.value;
+            const destCoords = destElement.value;
+            const startName = startElement.options[startElement.selectedIndex].textContent;
+            const destName = destElement.options[destElement.selectedIndex].textContent;
+            
+            // Data payload for the Flask server
+            const payload = {
+                start_coords: startCoords,
+                end_coords: destCoords
+            };
+
+            // Update UI fields before the calculation starts
+            document.getElementById('start_name').textContent = startName;
+            document.getElementById('dest_name').textContent = destName;
+
+            try {
+                // --- API CALL TO FLASK SERVER ---
+                const response = await fetch(FLASK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                document.getElementById('loading_status').style.display = 'none';
+                document.getElementById('output').style.display = 'block';
+
+                // --- MAP UPDATES ---
+                routeLayerGroup.clearLayers(); 
+
+                if (result.status === "Success") {
+                    const riskScore = result.total_predicted_accidents;
+                    const routeGeometry = result.route_geometry;
+                    
+                    // Draw the calculated route
+                    const polyline = L.polyline(routeGeometry, {
+                        color: '#ff6347', // Critical Red
+                        weight: 6,
+                        opacity: 0.8
+                    }).addTo(routeLayerGroup);
+
+                    // Add markers - FIX IS CONFIRMED HERE
+                    L.marker(routeGeometry[0]).addTo(routeLayerGroup).bindPopup(`<b>Start: ${startName}</b>`).openPopup();
+                    L.marker(routeGeometry[routeGeometry.length - 1]).addTo(routeLayerGroup).bindPopup(`<b>End: ${destName}</b>`);
+
+                    // Adjust map view to fit the entire route
+                    map.fitBounds(polyline.getBounds()); 
+
+                    // Update UI with final score
+                    document.getElementById('risk_score').textContent = riskScore.toFixed(2);
+                    document.getElementById('status_message').textContent = `Status: Success | Path calculated with ${result.node_count} nodes.`;
+                } else {
+                    // Handle No Path Found or Error
+                    document.getElementById('risk_score').textContent = `ERROR: ${result.status}`;
+                    document.getElementById('status_message').textContent = 'Calculation failed. Try a closer route.';
+                }
+
+            } catch (error) {
+                document.getElementById('loading_status').style.display = 'none';
+                document.getElementById('output').style.display = 'block';
+                document.getElementById('risk_score').textContent = 'CONNECTION ERROR';
+                document.getElementById('status_message').textContent = 'Could not connect to server. Did you run "python server.py" on the correct port?';
+                console.error('Fetch Error:', error);
+            }
+        }
+    </script>
 
 </body>
 </html>
